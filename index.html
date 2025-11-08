@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>立冬啦，宝宝在冬天要天天开心的呀</title>
+  <style>
+    /* 页面固定，禁止滚动 + 冬日雪花背景 */
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* 固定屏幕 */
+      background-color: #ffc0cb;
+      position: relative;
+    }
+    /* 雪花背景（优化：更密集+速度渐变） */
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle, #fff 1px, transparent 1px),
+        radial-gradient(circle, #fff 1px, transparent 1px),
+        radial-gradient(circle, #fff 1px, transparent 1px),
+        radial-gradient(circle, #fff 0.5px, transparent 0.5px); /* 新增细雪花 */
+      background-size: 100px 100px, 80px 80px, 60px 60px, 40px 40px;
+      background-position: 0 0, 40px 40px, 20px 20px, 10px 10px;
+      opacity: 0.4;
+      pointer-events: none;
+      animation: snowMove 15s linear infinite;
+    }
+    @keyframes snowMove {
+      0% { background-position: 0 0, 40px 40px, 20px 20px, 10px 10px; }
+      100% { background-position: 0 100vh, 40px 140px, 20px 120px, 10px 110px; }
+    }
+
+    /* 卡密验证弹窗（默认显示） */
+    .codePopup {
+      position: fixed;
+      width: 260px;
+      height: 220px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #fff;
+      border: 1px solid #eee;
+      box-sizing: border-box;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -60%) scale(0.8);
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out forwards;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999; /* 层级高于礼物确认弹窗 */
+    }
+    /* 确认弹窗（初始隐藏） */
+    .confirmPopup {
+      position: fixed;
+      width: 240px;
+      height: 180px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      background-color: #fff;
+      border: 1px solid #eee;
+      box-sizing: border-box;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -60%) scale(0.8);
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out forwards;
+      display: none; /* 初始隐藏 */
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+    }
+    @keyframes fadeIn {
+      to { 
+        opacity: 1; 
+        transform: translate(-50%, -50%) scale(1); 
+      }
+    }
+
+    /* 弹窗标题 */
+    .popupTitle {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      font-size: 14px;
+      color: #999;
+    }
+    /* 卡密输入框 */
+    .codeInput {
+      width: 180px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      text-align: center;
+    }
+    /* 错误提示 */
+    .errorMsg {
+      color: #f56c6c;
+      font-size: 12px;
+      margin-bottom: 10px;
+      height: 14px; /* 固定高度，避免抖动 */
+    }
+    /* 居中文字（高度居中 + 呼吸动效） */
+    .confirmPopup .msg {
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+      margin: 0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    /* 按钮样式 + hover动效 */
+    .btn {
+      padding: 8px 20px;
+      background-color: #409EFF;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .btn:hover {
+      background-color: #66b1ff;
+      transform: scale(1.05);
+    }
+    /* 卡密弹窗按钮位置 */
+    .codePopup .btn {
+      margin-top: 10px;
+    }
+    /* 确认弹窗按钮位置 */
+    .confirmPopup .btn {
+      position: absolute;
+      bottom: 15px;
+      right: 15px;
+    }
+
+    /* 原有弹窗容器（初始隐藏） */
+    #popupContainer {
+      display: none;
+    }
+
+    /* 原有弹窗样式（优化+点击消失动画） */
+    .popup {
+      position: fixed;
+      width: 100px;
+      height: 50px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+      padding: 8px;
+      background: linear-gradient(135deg, #fce4ec, #f3b6d2);
+      border: 1px solid #f0d0f0;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.5);
+      animation: popIn 0.5s forwards;
+      cursor: pointer;
+    }
+    /* 告白弹窗特殊样式 */
+    .popup.lovePopup {
+      background: linear-gradient(135deg, #ff6b8b, #ff8fa3);
+      border-color: #ff4d6d;
+      box-shadow: 0 4px 8px rgba(255, 77, 109, 0.3);
+    }
+    .popup.lovePopup .label {
+      color: #fff;
+      font-weight: bold;
+    }
+    .popup.lovePopup .msg {
+      color: #fff;
+      font-weight: bold;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes popIn {
+      0% { opacity: 0; transform: scale(0.5); }
+      70% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes popOut {
+      from { opacity: 1; transform: scale(1); }
+      to { opacity: 0; transform: scale(0.5); }
+    }
+
+    .popup::after {
+      content: "";
+      width: 100%;
+      height: 1px;
+      background: #e0c0e0;
+      margin: 3px 0;
+      display: block;
+    }
+    .lovePopup::after {
+      background: #ffccd5;
+    }
+
+    .popup .label {
+      font-size: 9px;
+      color: #d080d0;
+      margin-bottom: 2px;
+    }
+
+    .popup .msg {
+      font-size: 12px;
+      color: #663366;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- 卡密验证弹窗（默认显示） -->
+  <div class="codePopup">
+    <div class="popupTitle">立冬专属礼物验证</div>
+    <input type="text" class="codeInput" id="codeInput" placeholder="请输入卡密（我们相爱那天）">
+    <div class="errorMsg" id="errorMsg"></div>
+    <button class="btn" id="verifyBtn">验证</button>
+  </div>
+
+  <!-- 礼物确认弹窗（验证通过后显示） -->
+  <div class="confirmPopup">
+    <div class="popupTitle">立冬啦，宝宝，要天天开心的呀</div>
+    <div class="msg">有一份冬日礼物，确认打开吗？</div>
+    <button class="btn" id="confirmBtn">确认</button>
+  </div>
+
+  <!-- 原有弹窗容器 -->
+  <div id="popupContainer"></div>
+
+  <script>
+    // 卡密验证逻辑（已修改为251022）
+    const correctCode = "251022";
+    const codeInput = document.getElementById('codeInput');
+    const errorMsg = document.getElementById('errorMsg');
+    const verifyBtn = document.getElementById('verifyBtn');
+    const codePopup = document.querySelector('.codePopup');
+    const confirmPopup = document.querySelector('.confirmPopup');
+
+    // 验证按钮点击事件
+    verifyBtn.addEventListener('click', function() {
+      const inputCode = codeInput.value.trim();
+      if (!inputCode) {
+        errorMsg.textContent = "请输入卡密";
+        return;
+      }
+      if (inputCode === correctCode) {
+        errorMsg.textContent = "";
+        codePopup.style.display = 'none'; // 隐藏卡密弹窗
+        confirmPopup.style.display = 'flex'; // 显示礼物确认弹窗
+      } else {
+        errorMsg.textContent = "卡密错误，请重新输入";
+        codeInput.value = ""; // 清空输入框
+      }
+    });
+
+    // 支持回车验证
+    codeInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        verifyBtn.click();
+      }
+    });
+
+    // 礼物确认按钮点击事件
+    document.getElementById('confirmBtn').addEventListener('click', function() {
+      confirmPopup.style.display = 'none';
+      document.getElementById('popupContainer').style.display = 'block';
+
+      // 精选36条寄语 + 1条告白（共37条，与爱心位置匹配）
+      const messages = [
+        "你值得被深爱",
+        "要一直自信呀",
+        "每天活力满满",
+        "善良的你最美",
+        "保持热爱前行",
+        "多夸夸自己哦",
+        "笑容治愈一切",
+        "努力的你超闪",
+        "别吝啬夸奖哦",
+        "你本就很优秀",
+        "尝试发现可能",
+        "真诚是必杀技",
+        "大胆追想要的",
+        "热爱感染生活",
+        "保持这份善良",
+        "坚持终会结果",
+        "别忘你多优秀",
+        "给自己点时间",
+        "善意温暖他人",
+        "做独一无二的",
+        "你要多爱自己",
+        "自信的你最酷",
+        "勇敢奔赴热爱",
+        "你的光很耀眼",
+        "未来充满期待",
+        "好好享受生活",
+        "你是限量版哦",
+        "别否定你自己",
+        "大胆去尝试吧",
+        "你值得所有好",
+        "平安喜乐",
+        "好运常伴左右",
+        "记得穿衣保暖",
+        "天天开心快乐",
+        "星光为你闪耀",
+        "温柔住进心里",
+        "最后，我爱你！宝宝"
+      ];
+
+      const heartPositions = [
+        { left: "42%", top: "32%" },
+        { left: "48%", top: "29%" },
+        { left: "53%", top: "26%" },
+        { left: "58%", top: "23%" },
+        { left: "63%", top: "20%" },
+        { left: "68%", top: "17%" },
+        { left: "73%", top: "20%" },
+        { left: "78%", top: "23%" },
+        { left: "83%", top: "26%" },
+        { left: "88%", top: "29%" },
+        { left: "83%", top: "32%" },
+        { left: "78%", top: "35%" },
+        { left: "73%", top: "38%" },
+        { left: "68%", top: "41%" },
+        { left: "63%", top: "44%" },
+        { left: "58%", top: "47%" },
+        { left: "53%", top: "50%" },
+        { left: "48%", top: "53%" },
+        { left: "43%", top: "56%" },
+        { left: "38%", top: "53%" },
+        { left: "33%", top: "50%" },
+        { left: "28%", top: "47%" },
+        { left: "23%", top: "44%" },
+        { left: "18%", top: "41%" },
+        { left: "13%", top: "38%" },
+        { left: "8%", top: "35%" },
+        { left: "3%", top: "32%" },
+        { left: "3%", top: "29%" }, 
+        { left: "3%", top: "26%" },
+        { left: "8%", top: "23%" },
+        { left: "13%", top: "20%" },
+        { left: "18%", top: "17%" }, 
+        { left: "23%", top: "20%" },
+        { left: "28%", top: "23%" },
+        { left: "33%", top: "26%" },
+        { left: "38%", top: "29%" },
+      ];
+
+      heartPositions.forEach((pos, index) => {
+        const popup = document.createElement("div");
+        popup.className = "popup";
+        // 告白弹窗添加特殊类
+        if (index === messages.length - 1) {
+          popup.classList.add("lovePopup");
+        }
+        popup.style.left = pos.left;
+        popup.style.top = pos.top;
+        popup.style.animationDelay = `${index * 0.20}s`;
+        popup.innerHTML = `
+          <div class="label">💝 冬日提示</div>
+          <div class="msg">${messages[index]}</div>
+        `;
+        // 点击弹窗消失的交互
+        popup.addEventListener('click', function() {
+          this.style.animation = 'popOut 0.3s forwards';
+          setTimeout(() => {
+            this.remove();
+          }, 300);
+        });
+        document.getElementById('popupContainer').appendChild(popup);
+      });
+    });
+  </script>
+</body>
+</html>
